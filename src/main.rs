@@ -1,7 +1,9 @@
+use std::f64::consts::PI;
+
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::{
     DefaultTerminal, Frame,
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Stylize},
     text::Line,
     widgets::{
@@ -78,18 +80,35 @@ impl App {
             Canvas::default()
                 .x_bounds([-1., 1.])
                 .y_bounds([-1., 1.])
-                .paint(|ctx| self.draw_clock(ctx)),
+                .paint(|ctx| self.draw_clock(ctx, &canvas_layout)),
             canvas_layout,
         )
     }
 
-    fn draw_clock(&self, ctx: &mut Context) {
+    fn draw_clock(&self, ctx: &mut Context, area: &Rect) {
         ctx.draw(&Circle {
             x: 0.,
             y: 0.,
             radius: 1.,
             color: Color::DarkGray,
         });
+        let w = area.width as f64;
+        let h = area.height as f64;
+        // for num in 0..4 {
+        //     ctx.print((-(w / 2.).floor() + num as f64) / (w / 2.), 0., num.to_string());
+        //     ctx.print(((w / 2.).floor() - num as f64) / (w / 2.), 0., num.to_string());
+        //     ctx.print(0., (-(h / 2.).floor() + num as f64) / (h / 2.), num.to_string());
+        //     ctx.print(0., ((h / 2.).floor() - num as f64) / (h / 2.), num.to_string());
+        // }
+        for num in 1..13 {
+            // -w/2+1 <= x <= w/2 の範囲のみ正しく表示される
+            // 四捨五入の境界を回避するために0.5の代わりに0.4999
+            let x = (num as f64 * PI / 6.).sin() * ((w / 2.).ceil() - 2.5) + 0.4999
+                - (if num >= 10 { 0.5 } else { 0. });
+            // -h/2 <= y <= h/2-1 の範囲のみ正しく表示される
+            let y = (num as f64 * PI / 6.).cos() * ((h / 2.).ceil() - 1.5) - 0.4999;
+            ctx.print(x.round() / (w / 2.), y.round() / (h / 2.), num.to_string());
+        }
     }
 
     /// Reads the crossterm events and updates the state of [`App`].
