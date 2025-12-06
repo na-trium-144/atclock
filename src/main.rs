@@ -1,9 +1,13 @@
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::{
     DefaultTerminal, Frame,
-    style::Stylize,
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Stylize},
     text::Line,
-    widgets::{Block, Paragraph},
+    widgets::{
+        Block, Paragraph,
+        canvas::{Canvas, Circle, Context},
+    },
 };
 
 fn main() -> color_eyre::Result<()> {
@@ -44,19 +48,48 @@ impl App {
     /// - <https://docs.rs/ratatui/latest/ratatui/widgets/index.html>
     /// - <https://github.com/ratatui/ratatui/tree/main/ratatui-widgets/examples>
     fn render(&mut self, frame: &mut Frame) {
-        let title = Line::from("Ratatui Simple Template")
-            .bold()
-            .blue()
-            .centered();
-        let text = "Hello, Ratatui!\n\n\
-            Created using https://github.com/ratatui/templates\n\
-            Press `Esc`, `Ctrl-C` or `q` to stop running.";
+        let layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(vec![Constraint::Min(0), Constraint::Length(10)])
+            .split(frame.area());
+
+        // 中央の正方形のエリアを取り出す
+        let canvas_layout = layout[0];
+        let canvas_layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![
+                Constraint::Min(0),
+                Constraint::Length(
+                    std::cmp::min(canvas_layout.height * 2, canvas_layout.width) / 2,
+                ),
+                Constraint::Min(0),
+            ])
+            .split(canvas_layout)[1];
+        let canvas_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(vec![
+                Constraint::Min(0),
+                Constraint::Length(std::cmp::min(canvas_layout.height * 2, canvas_layout.width)),
+                Constraint::Min(0),
+            ])
+            .split(canvas_layout)[1];
+
         frame.render_widget(
-            Paragraph::new(text)
-                .block(Block::bordered().title(title))
-                .centered(),
-            frame.area(),
+            Canvas::default()
+                .x_bounds([-1., 1.])
+                .y_bounds([-1., 1.])
+                .paint(|ctx| self.draw_clock(ctx)),
+            canvas_layout,
         )
+    }
+
+    fn draw_clock(&self, ctx: &mut Context) {
+        ctx.draw(&Circle {
+            x: 0.,
+            y: 0.,
+            radius: 1.,
+            color: Color::DarkGray,
+        });
     }
 
     /// Reads the crossterm events and updates the state of [`App`].
