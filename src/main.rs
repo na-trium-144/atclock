@@ -1,14 +1,15 @@
 use std::f64::consts::PI;
 
+use chrono::Timelike;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::{
     DefaultTerminal, Frame,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Stylize},
-    text::Line,
+    style::{Color, Modifier, Stylize},
+    text::{self, Text},
     widgets::{
         Block, Paragraph,
-        canvas::{Canvas, Circle, Context},
+        canvas::{self, Canvas, Circle, Context},
     },
 };
 
@@ -107,8 +108,38 @@ impl App {
                 - (if num >= 10 { 0.5 } else { 0. });
             // -h/2 <= y <= h/2-1 の範囲のみ正しく表示される
             let y = (num as f64 * PI / 6.).cos() * ((h / 2.).ceil() - 1.5) - 0.4999;
-            ctx.print(x.round() / (w / 2.), y.round() / (h / 2.), num.to_string());
+            ctx.print(
+                x.round() / (w / 2.),
+                y.round() / (h / 2.),
+                text::Line::from(num.to_string()).fg(Color::DarkGray),
+            );
         }
+
+        let now = chrono::Local::now();
+        let sec = now.second() as f64;
+        let min = now.minute() as f64 + sec / 60.;
+        let hour = now.hour12().1 as f64 + min / 60.;
+        ctx.draw(&canvas::Line {
+            x1: 0.,
+            y1: 0.,
+            x2: (hour * PI / 6.).sin() * 0.5,
+            y2: (hour * PI / 6.).cos() * 0.5,
+            color: Color::Red,
+        });
+        ctx.draw(&canvas::Line {
+            x1: 0.,
+            y1: 0.,
+            x2: (min * PI / 30.).sin() * 0.7,
+            y2: (min * PI / 30.).cos() * 0.7,
+            color: Color::Blue,
+        });
+        ctx.draw(&canvas::Line {
+            x1: 0.,
+            y1: 0.,
+            x2: (sec * PI / 30.).sin() * 0.8,
+            y2: (sec * PI / 30.).cos() * 0.8,
+            color: Color::Green,
+        });
     }
 
     /// Reads the crossterm events and updates the state of [`App`].
