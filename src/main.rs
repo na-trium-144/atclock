@@ -5,7 +5,9 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifier
 use ratatui::{
     DefaultTerminal, Frame,
     layout::{Constraint, Direction, Layout},
-    widgets::canvas::Canvas,
+    style::{Color, Modifier, Stylize},
+    text,
+    widgets::{Block, BorderType, Paragraph, canvas::Canvas},
 };
 
 fn main() -> color_eyre::Result<()> {
@@ -24,6 +26,8 @@ pub struct App {
     /// Is the application running?
     running: bool,
     clock_state: clock::ClockState,
+    block_title: String,
+    block_content: String,
 }
 
 impl App {
@@ -45,6 +49,8 @@ impl App {
 
     fn update_chrono(&mut self) {
         let now = chrono::Local::now();
+        self.block_title = format!("{}", now.format("%Y-%m-%d %a"));
+        self.block_content = format!("{}", now.format("%I:%M:%S %p"));
         let sec = now.second() as f64;
         let min = now.minute() as f64 + sec / 60.;
         let hour = now.hour12().1 as f64 + min / 60.;
@@ -67,7 +73,7 @@ impl App {
 
         // 中央の正方形のエリアを取り出す
         let canvas_layout = layout[0];
-        let canvas_layout = Layout::default()
+        let canvas_with_digit_layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![
                 Constraint::Min(0),
@@ -75,8 +81,12 @@ impl App {
                     std::cmp::min(canvas_layout.height * 2, canvas_layout.width) / 2,
                 ),
                 Constraint::Min(0),
+                Constraint::Length(3),
+                Constraint::Min(0),
             ])
-            .split(canvas_layout)[1];
+            .split(canvas_layout);
+        let canvas_layout = canvas_with_digit_layout[1];
+        let digit_layout = canvas_with_digit_layout[3];
         let canvas_layout = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(vec![
@@ -85,6 +95,14 @@ impl App {
                 Constraint::Min(0),
             ])
             .split(canvas_layout)[1];
+        let digit_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(vec![
+                Constraint::Min(0),
+                Constraint::Length(18),
+                Constraint::Min(0),
+            ])
+            .split(digit_layout)[1];
 
         frame.render_widget(
             Canvas::default()
@@ -92,7 +110,26 @@ impl App {
                 .y_bounds([-1., 1.])
                 .paint(|ctx| clock::draw(ctx, &canvas_layout, &self.clock_state)),
             canvas_layout,
-        )
+        );
+        frame.render_widget(
+            Paragraph::new(&self.block_content[..])
+                .add_modifier(Modifier::ITALIC)
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Reset)
+                .centered()
+                .block(
+                    Block::bordered()
+                        .border_type(BorderType::Rounded)
+                        .title(
+                            text::Line::from(&self.block_title[..])
+                                .centered()
+                                .add_modifier(Modifier::ITALIC)
+                                .remove_modifier(Modifier::BOLD),
+                        )
+                        .fg(Color::DarkGray),
+                ),
+            digit_layout,
+        );
     }
 
     /// Reads the crossterm events and updates the state of [`App`].
