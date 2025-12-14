@@ -7,7 +7,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Stylize},
     text,
-    widgets::{Block, BorderType, Paragraph, canvas::Canvas},
+    widgets::{Block, BorderType, Paragraph, Tabs, canvas::Canvas},
 };
 
 fn main() -> color_eyre::Result<()> {
@@ -25,9 +25,18 @@ mod clock;
 pub struct App {
     /// Is the application running?
     running: bool,
+    selected_tab: AppTab,
     clock_state: clock::ClockState,
     block_title: String,
     block_content: String,
+}
+
+#[derive(Default, Debug, Clone, Copy)]
+enum AppTab {
+    #[default]
+    Clock,
+    Timer,
+    StopWatch,
 }
 
 impl App {
@@ -40,7 +49,27 @@ impl App {
     pub fn run(mut self, mut terminal: DefaultTerminal) -> color_eyre::Result<()> {
         self.running = true;
         while self.running {
-            self.update_chrono();
+            match self.selected_tab {
+                AppTab::Clock => {
+                    self.update_chrono();
+                }
+                AppTab::Timer => {
+                    // TODO!
+                    self.block_title = "Timer".to_string();
+                    self.block_content = "aaaaa".to_string();
+                    self.clock_state.sec_rad = 0.;
+                    self.clock_state.min_rad = 0.;
+                    self.clock_state.hour_rad = 0.;
+                }
+                AppTab::StopWatch => {
+                    // TODO!
+                    self.block_title = "StopWatch".to_string();
+                    self.block_content = "aaaaa".to_string();
+                    self.clock_state.sec_rad = 0.;
+                    self.clock_state.min_rad = 0.;
+                    self.clock_state.hour_rad = 0.;
+                }
+            }
             terminal.draw(|frame| self.render(frame))?;
             self.handle_crossterm_events()?;
         }
@@ -66,50 +95,70 @@ impl App {
     /// - <https://docs.rs/ratatui/latest/ratatui/widgets/index.html>
     /// - <https://github.com/ratatui/ratatui/tree/main/ratatui-widgets/examples>
     fn render(&mut self, frame: &mut Frame) {
-        let layout = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(vec![Constraint::Min(0), Constraint::Length(10)])
+        let vertical_layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![
+                Constraint::Length(1),
+                Constraint::Min(0),
+                Constraint::Length(3),
+            ])
             .split(frame.area());
-
+        let tabs_area = vertical_layout[0];
+        let canvas_area = vertical_layout[1];
+        let digit_area = vertical_layout[2];
         // 中央の正方形のエリアを取り出す
-        let canvas_layout = layout[0];
-        let canvas_with_digit_layout = Layout::default()
+        let canvas_area = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(vec![
+                Constraint::Min(0),
+                Constraint::Length(std::cmp::min(canvas_area.height * 2, canvas_area.width)),
+                Constraint::Min(0),
+            ])
+            .split(canvas_area)[1];
+        let canvas_area = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![
                 Constraint::Min(0),
-                Constraint::Length(
-                    std::cmp::min(canvas_layout.height * 2, canvas_layout.width) / 2,
-                ),
-                Constraint::Min(0),
-                Constraint::Length(3),
+                Constraint::Length(std::cmp::min(canvas_area.height * 2, canvas_area.width) / 2),
                 Constraint::Min(0),
             ])
-            .split(canvas_layout);
-        let canvas_layout = canvas_with_digit_layout[1];
-        let digit_layout = canvas_with_digit_layout[3];
-        let canvas_layout = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(vec![
-                Constraint::Min(0),
-                Constraint::Length(std::cmp::min(canvas_layout.height * 2, canvas_layout.width)),
-                Constraint::Min(0),
-            ])
-            .split(canvas_layout)[1];
-        let digit_layout = Layout::default()
+            .split(canvas_area)[1];
+        let digit_area = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(vec![
                 Constraint::Min(0),
                 Constraint::Length(18),
                 Constraint::Min(0),
             ])
-            .split(digit_layout)[1];
+            .split(digit_area)[1];
 
+        let tab_description: String = "Select Mode with [Tab]:".to_string();
+        let tabs_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(vec![
+                Constraint::Length(tab_description.len() as u16),
+                Constraint::Min(0),
+            ])
+            .split(tabs_area);
+        let description_area = tabs_layout[0];
+        let tabs_area = tabs_layout[1];
+
+        frame.render_widget(
+            text::Text::from(tab_description).add_modifier(Modifier::DIM),
+            description_area,
+        );
+        frame.render_widget(
+            Tabs::new(vec!["Clock", "Timer", "StopWatch"])
+                .highlight_style(Modifier::BOLD | Modifier::ITALIC)
+                .select(self.selected_tab as usize),
+            tabs_area,
+        );
         frame.render_widget(
             Canvas::default()
                 .x_bounds([-1., 1.])
                 .y_bounds([-1., 1.])
-                .paint(|ctx| clock::draw(ctx, &canvas_layout, &self.clock_state)),
-            canvas_layout,
+                .paint(|ctx| clock::draw(ctx, &canvas_area, &self.clock_state)),
+            canvas_area,
         );
         frame.render_widget(
             Paragraph::new(&self.block_content[..])
@@ -133,7 +182,7 @@ impl App {
                         .remove_modifier(Modifier::BOLD)
                         .add_modifier(Modifier::DIM),
                 ),
-            digit_layout,
+            digit_area,
         );
     }
 
@@ -160,6 +209,20 @@ impl App {
             (_, KeyCode::Esc | KeyCode::Char('q'))
             | (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => self.quit(),
             // Add other key handlers here.
+            (KeyModifiers::SHIFT, KeyCode::Tab) => {
+                self.selected_tab = match self.selected_tab {
+                    AppTab::Clock => AppTab::StopWatch,
+                    AppTab::Timer => AppTab::Clock,
+                    AppTab::StopWatch => AppTab::Timer,
+                }
+            }
+            (_, KeyCode::Tab) => {
+                self.selected_tab = match self.selected_tab {
+                    AppTab::Clock => AppTab::Timer,
+                    AppTab::Timer => AppTab::StopWatch,
+                    AppTab::StopWatch => AppTab::Clock,
+                }
+            }
             _ => {}
         }
     }
