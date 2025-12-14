@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 
 use ratatui::{
     layout::Rect,
-    style::{Color, Stylize},
+    style::{Color, Modifier, Stylize},
     text,
     widgets::canvas::{self, Circle, Context},
 };
@@ -39,7 +39,7 @@ pub fn draw(ctx: &mut Context, area: &Rect, state: &ClockState) {
         ctx.print(
             x.round() / (w / 2.),
             y.round() / (h / 2.),
-            text::Line::from(num.to_string()).fg(Color::DarkGray),
+            text::Line::from(num.to_string()).fg(Color::Reset).add_modifier(Modifier::DIM),
         );
     }
 

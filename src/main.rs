@@ -115,18 +115,23 @@ impl App {
             Paragraph::new(&self.block_content[..])
                 .add_modifier(Modifier::ITALIC)
                 .add_modifier(Modifier::BOLD)
+                .remove_modifier(Modifier::DIM)
                 .fg(Color::Reset)
                 .centered()
                 .block(
                     Block::bordered()
                         .border_type(BorderType::Rounded)
                         .title(
-                            text::Line::from(&self.block_title[..])
-                                .centered()
-                                .add_modifier(Modifier::ITALIC)
-                                .remove_modifier(Modifier::BOLD),
+                            text::Line::from(&self.block_title[..]).centered(),
+                            // ↓不要
+                            // .add_modifier(Modifier::ITALIC)
+                            // .remove_modifier(Modifier::BOLD)
+                            // .add_modifier(Modifier::DIM),
                         )
-                        .fg(Color::DarkGray),
+                        .fg(Color::Reset)
+                        .add_modifier(Modifier::ITALIC)
+                        .remove_modifier(Modifier::BOLD)
+                        .add_modifier(Modifier::DIM),
                 ),
             digit_layout,
         );
