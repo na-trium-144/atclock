@@ -39,29 +39,37 @@ pub fn draw(ctx: &mut Context, area: &Rect, state: &ClockState) {
         ctx.print(
             x.round() / (w / 2.),
             y.round() / (h / 2.),
-            text::Line::from(num.to_string()).fg(Color::Reset).add_modifier(Modifier::DIM),
+            text::Line::from(num.to_string())
+                .fg(Color::Reset)
+                .add_modifier(Modifier::DIM),
         );
     }
 
-    ctx.draw(&canvas::Line {
-        x1: 0.,
-        y1: 0.,
-        x2: state.hour_rad.sin() * 0.5,
-        y2: state.hour_rad.cos() * 0.5,
-        color: Color::Red,
-    });
-    ctx.draw(&canvas::Line {
-        x1: 0.,
-        y1: 0.,
-        x2: state.min_rad.sin() * 0.7,
-        y2: state.min_rad.cos() * 0.7,
-        color: Color::Blue,
-    });
-    ctx.draw(&canvas::Line {
-        x1: 0.,
-        y1: 0.,
-        x2: state.sec_rad.sin() * 0.8,
-        y2: state.sec_rad.cos() * 0.8,
-        color: Color::Green,
-    });
+    for d in -5..5 {
+        ctx.draw(&canvas::Line {
+            x1: state.hour_rad.cos() * 0.005 * (d as f64),
+            y1: -state.hour_rad.sin() * 0.005 * (d as f64),
+            x2: state.hour_rad.sin() * 0.5,
+            y2: state.hour_rad.cos() * 0.5,
+            color: Color::Red,
+        });
+    }
+    for d in -3..3 {
+        ctx.draw(&canvas::Line {
+            x1: state.min_rad.cos() * 0.005 * (d as f64),
+            y1: -state.min_rad.sin() * 0.005 * (d as f64),
+            x2: state.min_rad.sin() * 0.7,
+            y2: state.min_rad.cos() * 0.7,
+            color: Color::Blue,
+        });
+    }
+    for d in -2..2 {
+        ctx.draw(&canvas::Line {
+            x1: state.sec_rad.cos() * 0.005 * (d as f64),
+            y1: -state.sec_rad.sin() * 0.005 * (d as f64),
+            x2: state.sec_rad.sin() * 0.8,
+            y2: state.sec_rad.cos() * 0.8,
+            color: Color::Green,
+        });
+    }
 }
