@@ -105,14 +105,14 @@ impl App {
         // 中央の正方形のエリアを取り出す
         let canvas_h_layout = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints(if canvas_area.width >= 40 && canvas_area.height >= 10 {
+            .constraints(if canvas_area.width >= 50 && canvas_area.height >= 10 {
                 vec![
                     Constraint::Min(0),
-                    Constraint::Length(20),
+                    Constraint::Length(24),
                     Constraint::Min(0),
                     Constraint::Length(std::cmp::min(
                         (canvas_area.height - 3) * 2,
-                        canvas_area.width - 20,
+                        canvas_area.width - 24,
                     )),
                     Constraint::Min(0),
                 ]
