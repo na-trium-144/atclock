@@ -5,10 +5,11 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifier
 use ratatui::{
     DefaultTerminal, Frame,
     layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Stylize},
+    style::{Color, Modifier, Style, Stylize},
     text,
-    widgets::{Block, BorderType, Paragraph, Tabs, canvas::Canvas},
+    widgets::{Block, BorderType, Padding, Paragraph, Tabs, calendar, canvas::Canvas},
 };
+use time::OffsetDateTime;
 
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
@@ -97,32 +98,59 @@ impl App {
     fn render(&mut self, frame: &mut Frame) {
         let vertical_layout = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![
-                Constraint::Length(1),
-                Constraint::Min(0),
-                Constraint::Length(3),
-            ])
+            .constraints(vec![Constraint::Length(1), Constraint::Min(0)])
             .split(frame.area());
         let tabs_area = vertical_layout[0];
         let canvas_area = vertical_layout[1];
-        let digit_area = vertical_layout[2];
         // 中央の正方形のエリアを取り出す
-        let canvas_area = Layout::default()
+        let canvas_h_layout = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints(vec![
-                Constraint::Min(0),
-                Constraint::Length(std::cmp::min(canvas_area.height * 2, canvas_area.width)),
-                Constraint::Min(0),
-            ])
-            .split(canvas_area)[1];
-        let canvas_area = Layout::default()
+            .constraints(if canvas_area.width >= 40 && canvas_area.height >= 10 {
+                vec![
+                    Constraint::Min(0),
+                    Constraint::Length(20),
+                    Constraint::Min(0),
+                    Constraint::Length(std::cmp::min(
+                        (canvas_area.height - 3) * 2,
+                        canvas_area.width - 20,
+                    )),
+                    Constraint::Min(0),
+                ]
+            } else {
+                vec![
+                    Constraint::Min(0),
+                    Constraint::Length(0),
+                    Constraint::Length(0),
+                    Constraint::Length(std::cmp::min(
+                        (canvas_area.height - 3) * 2,
+                        canvas_area.width,
+                    )),
+                    Constraint::Min(0),
+                ]
+            })
+            .split(canvas_area);
+        let panel_area = canvas_h_layout[1];
+        let panel_area = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![
                 Constraint::Min(0),
-                Constraint::Length(std::cmp::min(canvas_area.height * 2, canvas_area.width) / 2),
+                Constraint::Length(10),
                 Constraint::Min(0),
             ])
-            .split(canvas_area)[1];
+            .split(panel_area)[1];
+        let canvas_area = canvas_h_layout[3];
+        let canvas_v_layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![
+                Constraint::Min(0),
+                Constraint::Length(
+                    std::cmp::min((canvas_area.height - 3) * 2, canvas_area.width) / 2,
+                ),
+                Constraint::Min(0),
+                Constraint::Length(3),
+            ])
+            .split(canvas_area);
+        let digit_area = canvas_v_layout[3];
         let digit_area = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(vec![
@@ -131,6 +159,7 @@ impl App {
                 Constraint::Min(0),
             ])
             .split(digit_area)[1];
+        let canvas_area = canvas_v_layout[1];
 
         let tab_description: String = "Select Mode with [Tab]:".to_string();
         let tabs_layout = Layout::default()
@@ -152,6 +181,35 @@ impl App {
                 .highlight_style(Modifier::BOLD | Modifier::ITALIC)
                 .select(self.selected_tab as usize),
             tabs_area,
+        );
+        frame.render_widget(
+            calendar::Monthly::new(
+                OffsetDateTime::now_local().unwrap().date(),
+                calendar::CalendarEventStore::today(
+                    Style::default()
+                        .fg(Color::LightBlue)
+                        .add_modifier(Modifier::BOLD)
+                        .add_modifier(Modifier::ITALIC)
+                        .add_modifier(Modifier::REVERSED),
+                ),
+            )
+            .default_style(Style::default().remove_modifier(Modifier::DIM))
+            .block(
+                Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .add_modifier(Modifier::DIM),
+            )
+            .show_month_header(
+                Style::default()
+                    .remove_modifier(Modifier::DIM)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .show_weekdays_header(
+                Style::default()
+                    .add_modifier(Modifier::DIM)
+                    .add_modifier(Modifier::ITALIC),
+            ),
+            panel_area,
         );
         frame.render_widget(
             Canvas::default()
