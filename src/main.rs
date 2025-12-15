@@ -208,7 +208,8 @@ impl App {
                 Style::default()
                     .add_modifier(Modifier::DIM)
                     .add_modifier(Modifier::ITALIC),
-            ),
+            )
+            .show_surrounding(Style::default().add_modifier(Modifier::DIM)),
             panel_area,
         );
         frame.render_widget(
