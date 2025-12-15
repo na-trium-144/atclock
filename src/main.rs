@@ -171,14 +171,15 @@ impl App {
                     Block::bordered()
                         .border_type(BorderType::Rounded)
                         .title(
-                            text::Line::from(&self.block_title[..]).centered(),
+                            text::Line::from(&self.block_title[..])
+                                .centered()
+                                .add_modifier(Modifier::ITALIC),
                             // ↓不要
-                            // .add_modifier(Modifier::ITALIC)
                             // .remove_modifier(Modifier::BOLD)
-                            // .add_modifier(Modifier::DIM),
+                            // .add_modifier(Modifier::DIM)
                         )
                         .fg(Color::Reset)
-                        .add_modifier(Modifier::ITALIC)
+                        .remove_modifier(Modifier::ITALIC)
                         .remove_modifier(Modifier::BOLD)
                         .add_modifier(Modifier::DIM),
                 ),
