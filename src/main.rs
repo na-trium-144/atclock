@@ -21,6 +21,7 @@ fn main() -> color_eyre::Result<()> {
 
 mod analog;
 mod clock_tab;
+mod stopwatch_tab;
 
 /// The main application which holds the state and logic of the application.
 #[derive(Debug, Default)]
@@ -28,6 +29,7 @@ pub struct App {
     /// Is the application running?
     running: bool,
     selected_tab: AppTab,
+    sw: stopwatch_tab::StopWatchState,
 }
 
 #[derive(Default, Debug, Clone, Copy)]
@@ -56,26 +58,8 @@ impl App {
         while self.running {
             let display = match self.selected_tab {
                 AppTab::Clock => clock_tab::update_chrono(),
-                AppTab::Timer => DisplayData {
-                    // TODO!
-                    block_title: "Timer".to_string(),
-                    block_content: "aaaaa".to_string(),
-                    analog_state: analog::ClockState {
-                        sec_rad: 0.,
-                        min_rad: 0.,
-                        hour_rad: 0.,
-                    },
-                },
-                AppTab::StopWatch => DisplayData {
-                    // TODO!
-                    block_title: "Timer".to_string(),
-                    block_content: "aaaaa".to_string(),
-                    analog_state: analog::ClockState {
-                        sec_rad: 0.,
-                        min_rad: 0.,
-                        hour_rad: 0.,
-                    },
-                },
+                AppTab::Timer => stopwatch_tab::update_sw(&self.sw),
+                AppTab::StopWatch => stopwatch_tab::update_sw(&self.sw),
             };
             terminal.draw(|frame| self.render(frame, display))?;
             self.handle_crossterm_events()?;
@@ -173,6 +157,7 @@ impl App {
         );
         match self.selected_tab {
             AppTab::Clock => clock_tab::render_panel(frame, panel_area),
+            AppTab::StopWatch => stopwatch_tab::render_panel(frame, panel_area, &self.sw),
             _ => (),
         };
         frame.render_widget(
@@ -214,7 +199,7 @@ impl App {
     /// If your application needs to perform work in between handling events, you can use the
     /// [`event::poll`] function to check if there are any events available with a timeout.
     fn handle_crossterm_events(&mut self) -> color_eyre::Result<()> {
-        if event::poll(Duration::from_millis(100))? {
+        if event::poll(Duration::from_millis(10))? {
             match event::read()? {
                 // it's important to check KeyEventKind::Press to avoid handling key release events
                 Event::Key(key) if key.kind == KeyEventKind::Press => self.on_key_event(key),
@@ -248,6 +233,11 @@ impl App {
             }
             _ => {}
         }
+        match self.selected_tab {
+            AppTab::Clock => (),
+            AppTab::StopWatch => stopwatch_tab::handle_key_event(&mut self.sw, &key),
+            _ => (),
+        };
     }
 
     /// Set running to false to quit the application.
