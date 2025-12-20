@@ -22,6 +22,7 @@ fn main() -> color_eyre::Result<()> {
 mod analog;
 mod clock_tab;
 mod stopwatch_tab;
+mod timer_tab;
 
 /// The main application which holds the state and logic of the application.
 #[derive(Debug, Default)]
@@ -30,6 +31,7 @@ pub struct App {
     running: bool,
     selected_tab: AppTab,
     sw: stopwatch_tab::StopWatchState,
+    timer: timer_tab::TimerState,
 }
 
 #[derive(Default, Debug, Clone, Copy)]
@@ -58,7 +60,7 @@ impl App {
         while self.running {
             let display = match self.selected_tab {
                 AppTab::Clock => clock_tab::update_chrono(),
-                AppTab::Timer => stopwatch_tab::update_sw(&self.sw),
+                AppTab::Timer => timer_tab::update_timer(&mut self.timer),
                 AppTab::StopWatch => stopwatch_tab::update_sw(&self.sw),
             };
             terminal.draw(|frame| self.render(frame, display))?;
@@ -157,8 +159,8 @@ impl App {
         );
         match self.selected_tab {
             AppTab::Clock => clock_tab::render_panel(frame, panel_area),
+            AppTab::Timer => timer_tab::render_panel(frame, panel_area, &self.timer),
             AppTab::StopWatch => stopwatch_tab::render_panel(frame, panel_area, &self.sw),
-            _ => (),
         };
         frame.render_widget(
             Canvas::default()
@@ -235,8 +237,8 @@ impl App {
         }
         match self.selected_tab {
             AppTab::Clock => (),
+            AppTab::Timer => timer_tab::handle_key_event(&mut self.timer, &key),
             AppTab::StopWatch => stopwatch_tab::handle_key_event(&mut self.sw, &key),
-            _ => (),
         };
     }
 

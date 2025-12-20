@@ -44,7 +44,7 @@ pub fn update_sw(state: &StopWatchState) -> super::DisplayData {
         elapsed.num_milliseconds() % 1000
     );
     let ms = (elapsed.num_milliseconds() % 1000) as f64;
-    let sec = (elapsed.num_seconds() % 60) as f64 /*+ ms / 1000.*/;
+    let sec = (elapsed.num_seconds() % 60) as f64 + ms / 1000.;
     let min = elapsed.num_minutes() as f64 + sec / 60.;
     let analog_state = super::analog::ClockState {
         sec_rad: ms * PI / 500.,
